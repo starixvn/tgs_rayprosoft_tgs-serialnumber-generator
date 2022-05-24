@@ -11,5 +11,5 @@ internal class SerialNumberGeneratorBackgroundService : BackgroundService
 		_numberGenerator = numberGenerator;
 	}
 
-	protected override Task ExecuteAsync(CancellationToken stoppingToken) => _numberGenerator.StartListenAsync();
+	protected override Task ExecuteAsync(CancellationToken stoppingToken) => _numberGenerator.StartListenAsync(stoppingToken);
 }

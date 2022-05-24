@@ -14,22 +14,24 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 		_machineHash = machineHash[..4].ToArray();
 	}
 
-	public Task StartListenAsync() => Task.Run(() =>
-	 {
-		 foreach (var source in _taskQueue.GetConsumingEnumerable())
-		 {
-			 source.SetResult(InternalGenerateGuid());
-		 }
-	 });
-
-	public async ValueTask<Guid> GenerateAsync()
+	public async ValueTask<Guid> GenerateAsync(CancellationToken cancellationToken = default)
 	{
 		var tcs = new TaskCompletionSource<Guid>();
 
 		_taskQueue.Add(tcs);
 
+		cancellationToken.Register(() => tcs.TrySetCanceled());
+
 		return await tcs.Task.ConfigureAwait(false);
 	}
+
+	public Task StartListenAsync(CancellationToken cancellationToken = default) => Task.Run(() =>
+	{
+		foreach (var source in _taskQueue.GetConsumingEnumerable(cancellationToken))
+		{
+			source.SetResult(InternalGenerateGuid());
+		}
+	}, cancellationToken);
 
 	private Guid InternalGenerateGuid()
 	{
