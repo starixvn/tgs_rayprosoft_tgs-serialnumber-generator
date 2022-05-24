@@ -2,7 +2,7 @@ pipeline {
 	agent any
 	
 	environment {
-		BuildConfiguration="Debug"
+		BuildConfiguration="Release"
 	}
 
 	stages {
