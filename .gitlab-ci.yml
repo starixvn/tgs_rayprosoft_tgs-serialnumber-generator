@@ -1,0 +1,36 @@
+variables:
+  BuildCacheKey: Tgs.SerialNumber.$CI_PIPELINE_IID
+
+stages:
+  - build
+  - publish
+
+build-code:
+  stage: build
+  script:
+    - dotnet build -c $BuildConfiguration
+  only:
+    - main
+  cache:
+    key: $BuildCacheKey
+    untracked: true
+
+push-nuget:
+  stage: publish
+  needs:
+    - build-code
+  cache:
+    key: $BuildCacheKey
+    untracked: true   
+    policy: pull
+  only:
+    - main
+  script:
+    - dotnet pack -c $BuildConfiguration "Tgs.SerialNumberGenerator/Tgs.SerialNumberGenerator.csproj" --no-build --no-restore
+    - dotnet nuget push "Tgs.SerialNumberGenerator/bin/$BuildConfiguration/*.nupkg" --source "raypro-baget" -k $NugetApiKey --skip-duplicate
+  artifacts:
+    name: Nuget
+    untracked: false
+    expire_in: "30 days"
+    paths:
+      - Tgs.SerialNumberGenerator/bin/$BuildConfiguration/*.nupkg
