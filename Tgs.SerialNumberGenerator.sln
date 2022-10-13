@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tgs.SerialNumberGenerator", "Tgs.SerialNumberGenerator\Tgs.SerialNumberGenerator.csproj", "{CD874BDE-8B6F-4EA2-A7EE-16E0F74C3489}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tgs.SerialNumberGenerator", "Tgs.SerialNumberGenerator\Tgs.SerialNumberGenerator.csproj", "{CD874BDE-8B6F-4EA2-A7EE-16E0F74C3489}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerialNumberGenerator.Benchmark", "SerialNumberGenerator.Benchmark\SerialNumberGenerator.Benchmark.csproj", "{169D6F53-47A1-4D1F-822B-D085C2D3C278}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SerialNumberGenerator.Benchmark", "SerialNumberGenerator.Benchmark\SerialNumberGenerator.Benchmark.csproj", "{169D6F53-47A1-4D1F-822B-D085C2D3C278}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerialNumberTest", "SerialNumberTest\SerialNumberTest.csproj", "{A9F6B910-9787-4E55-88BE-FD6A7A4CF107}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{169D6F53-47A1-4D1F-822B-D085C2D3C278}.Debug|Any CPU.Build.0 = Release|Any CPU
 		{169D6F53-47A1-4D1F-822B-D085C2D3C278}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{169D6F53-47A1-4D1F-822B-D085C2D3C278}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9F6B910-9787-4E55-88BE-FD6A7A4CF107}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9F6B910-9787-4E55-88BE-FD6A7A4CF107}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9F6B910-9787-4E55-88BE-FD6A7A4CF107}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9F6B910-9787-4E55-88BE-FD6A7A4CF107}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
