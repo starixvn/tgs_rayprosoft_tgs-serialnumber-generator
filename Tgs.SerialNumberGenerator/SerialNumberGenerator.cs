@@ -1,58 +1,68 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Threading.Channels;
 
 namespace Tgs.SerialNumberGenerator;
 
 internal class SerialNumberGenerator : ISerialNumberGenerator
 {
+	private readonly Memory<byte> _buffer;
 	private readonly Memory<byte> _machineHash;
-	private readonly BlockingCollection<TaskCompletionSource<Guid>> _taskQueue = new();
+	private readonly Channel<TaskCompletionSource<Guid>> _taskQueue = Channel.CreateUnbounded<TaskCompletionSource<Guid>>();
 	private int _increment = 0;
 	private long _previousTimestamp = 0L;
 
 	public SerialNumberGenerator(ReadOnlySpan<byte> machineHash)
 	{
 		_machineHash = machineHash[..4].ToArray();
+		_buffer = new Memory<byte>(new byte[16]);
+
+		_machineHash.Span.CopyTo(_buffer.Span[12..]);
 	}
 
 	public async ValueTask<Guid> GenerateAsync(CancellationToken cancellationToken = default)
 	{
 		var tcs = new TaskCompletionSource<Guid>();
 
-		_taskQueue.Add(tcs);
+		await _taskQueue.Writer.WriteAsync(tcs, cancellationToken).ConfigureAwait(false);
 
-		cancellationToken.Register(() => tcs.TrySetCanceled());
+		_ = cancellationToken.Register(() => tcs.TrySetCanceled());
 
 		return await tcs.Task.ConfigureAwait(false);
 	}
 
-	public Task StartListenAsync(CancellationToken cancellationToken = default) => Task.Run(() =>
+	public Task StartListenAsync(CancellationToken cancellationToken = default) => Task.Run(async () =>
 	{
-		foreach (var source in _taskQueue.GetConsumingEnumerable(cancellationToken))
+		while (await _taskQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
 		{
-			source.SetResult(InternalGenerateGuid());
+			if (_taskQueue.Reader.TryRead(out var source))
+			{
+				source.SetResult(InternalGenerateGuid());
+			}
 		}
 	}, cancellationToken);
 
 	private Guid InternalGenerateGuid()
 	{
-		var buffer = (Span<byte>)stackalloc byte[16];
+		var buffer = _buffer.Span;
 
 		var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-		var previousTimestamp = Interlocked.Exchange(ref _previousTimestamp, timestamp);
+		var previousTimestamp = _previousTimestamp;
+		_previousTimestamp = timestamp;
 		if (timestamp != previousTimestamp)
-			_ = Interlocked.Exchange(ref _increment, 0);
+		{
+			_increment = 0;
 
-		var timestampBuffer = BitConverter.GetBytes(timestamp).AsSpan();
+			var timestampBuffer = BitConverter.GetBytes(timestamp).AsSpan();
 
-		timestampBuffer.Slice(4, 2).Reverse();
-		timestampBuffer.Slice(6, 2).Reverse();
+			timestampBuffer.Slice(4, 2).Reverse();
+			timestampBuffer.Slice(6, 2).Reverse();
 
-		timestampBuffer[..6].CopyTo(buffer);
-		timestampBuffer.Slice(6, 2).CopyTo(buffer[10..]);
+			timestampBuffer[..6].CopyTo(buffer);
+			timestampBuffer.Slice(6, 2).CopyTo(buffer[10..]);
+		}
 
-		_machineHash.Span.CopyTo(buffer[12..]);
-
-		var serialNo = Interlocked.Increment(ref _increment);
+		var serialNo = ++_increment;
 
 		var serialBuffer = BitConverter.GetBytes(serialNo).AsSpan();
 
@@ -61,7 +71,12 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 		serialBuffer.CopyTo(buffer[6..]);
 
 		if (serialNo == int.MaxValue)
-			_ = SpinWait.SpinUntil(() => true, 1);
+		{
+			var sw = Stopwatch.StartNew();
+			while (sw.ElapsedTicks < 10000)
+				;
+			sw.Stop();
+		}
 
 		return new Guid(buffer);
 	}
