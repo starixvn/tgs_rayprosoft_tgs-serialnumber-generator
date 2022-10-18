@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Threading.Channels;
 
 namespace Tgs.SerialNumberGenerator;
@@ -8,7 +7,13 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 {
 	private readonly Memory<byte> _buffer;
 	private readonly Memory<byte> _machineHash;
-	private readonly Channel<TaskCompletionSource<Guid>> _taskQueue = Channel.CreateUnbounded<TaskCompletionSource<Guid>>();
+
+	private readonly Channel<TaskCompletionSource<Guid>> _taskQueue = Channel.CreateUnbounded<TaskCompletionSource<Guid>>(
+		new UnboundedChannelOptions
+		{
+			SingleReader = true
+		});
+
 	private int _increment = 0;
 	private long _previousTimestamp = 0L;
 
@@ -36,9 +41,17 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 		while (await _taskQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
 		{
 			if (_taskQueue.Reader.TryRead(out var source))
-			{
-				source.SetResult(InternalGenerateGuid());
-			}
+				try
+				{
+					if (cancellationToken.IsCancellationRequested)
+						_ = source.TrySetCanceled();
+					else
+						source.SetResult(InternalGenerateGuid());
+				}
+				catch (Exception ex)
+				{
+					_ = source.TrySetException(ex);
+				}
 		}
 	}, cancellationToken);
 
