@@ -11,6 +11,7 @@
     <PackageTags>Tgs SN SerialNumber</PackageTags>
     <SqlQueryToolsConnectionString />
     <PackageId>Tgs.SerialNumberGenerator</PackageId>
+    <RootNamespace>Tgs.SerialNumberGenerator</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
