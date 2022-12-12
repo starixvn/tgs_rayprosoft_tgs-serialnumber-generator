@@ -13,6 +13,13 @@ await app.StartAsync();
 
 var gen = app.Services.GetRequiredService<ISerialNumberGenerator>();
 
-Console.WriteLine(await gen.GenerateAsync());
-Console.WriteLine(await gen.GenerateAsync());
-Console.WriteLine(await gen.GenerateAsync());
+//Console.WriteLine(await gen.GenerateAsync());
+//Console.WriteLine(await gen.GenerateAsync());
+//Console.WriteLine(await gen.GenerateAsync());
+
+var list = new List<Guid>(100_0000);
+for (var i = 0; i < 100_0000; i++)
+	list.Add(await gen.GenerateAsync());
+
+foreach(var id in list.TakeLast(10000))
+	Console.WriteLine(id);

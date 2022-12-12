@@ -9,6 +9,7 @@
     <PackageProjectUrl>https://gitlab.com/rayprosoft/tgs-serialnumber-generator</PackageProjectUrl>
     <RepositoryUrl>https://gitlab.com/rayprosoft/tgs-serialnumber-generator.git</RepositoryUrl>
     <PackageTags>SN SerialNumber</PackageTags>
+    <SqlQueryToolsConnectionString />
   </PropertyGroup>
 
   <ItemGroup>
