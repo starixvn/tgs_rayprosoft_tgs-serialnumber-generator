@@ -1,4 +1,5 @@
 ﻿using NSubstitute;
+using Xunit;
 
 namespace Tgs.SerialNumberGenerator.UnitTests;
 
@@ -16,6 +17,28 @@ public class SerialNumberGeneratorTests
 
 		// Assert
 		Assert.NotEqual(Guid.Empty, actual);
+	}
+
+	[Fact]
+	public async Task 指定時間產生流水號會依照格式產出()
+	{
+		// Arrange
+		var fakeSystemClock = Substitute.For<ISystemClock>();
+		var sut = new SerialNumberGenerator(new byte[] { 0x0c, 0x0d, 0x0e, 0x0f }, fakeSystemClock);
+		_ = sut.StartListenAsync();
+
+		_ = fakeSystemClock.UtcNow
+			.Returns(
+				DateTimeOffset.FromUnixTimeMilliseconds(0x0000_0102_0304_0506));
+
+		// Act
+		for (int i = 0; i < 0x02ab; i++)
+			_ = await sut.GenerateAsync();
+
+		var actual = await sut.GenerateAsync();
+
+		// Assert
+		Assert.Equal(Guid.Parse("01020304-0506-0000-02ac-07d50c0d0e0f"), actual);
 	}
 
 	[Fact]

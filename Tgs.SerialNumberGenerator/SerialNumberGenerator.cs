@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 
@@ -7,7 +8,7 @@ namespace Tgs.SerialNumberGenerator;
 internal class SerialNumberGenerator : ISerialNumberGenerator
 {
 	private readonly Memory<byte> _buffer = new byte[16];
-	private readonly Memory<byte> _incrementBuffer = new byte[4];
+	private int _increment = 0;
 
 	private readonly ISystemClock _systemClock;
 
@@ -60,8 +61,6 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 	private Guid InternalGenerateGuid()
 	{
 		var buffer = _buffer.Span;
-		var incrementSpan = _incrementBuffer.Span;
-		ref var increment = ref MemoryMarshal.AsRef<int>(incrementSpan);
 
 		Span<byte> timestampBuffer = stackalloc byte[8];
 		ref var timestamp = ref MemoryMarshal.AsRef<long>(timestampBuffer);
@@ -73,10 +72,7 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 
 		if (timestamp != previousTimestamp)
 		{
-			increment = 0;
-
-			//for (int i = 0; i < 4; i++)
-			//	buffer[i] = timestampBuffer[5 - i];
+			_increment = 0;
 
 			ref var a = ref MemoryMarshal.AsRef<int>(buffer[0..4]);
 			a = MemoryMarshal.AsRef<int>(timestampBuffer[2..6]);
@@ -84,24 +80,14 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 			ref var b = ref MemoryMarshal.AsRef<short>(buffer[4..6]);
 			b = MemoryMarshal.AsRef<short>(timestampBuffer[0..2]);
 
-			//buffer[4] = timestampBuffer[0];
-			//buffer[5] = timestampBuffer[1];
-
-			Span<byte> yearBuffer = stackalloc byte[2];
-			ref var year = ref MemoryMarshal.AsRef<ushort>(yearBuffer);
-
-			year = (ushort)currentTime.Year;
-
-			buffer[10] = yearBuffer[1];
-			buffer[11] = yearBuffer[0];
+			BinaryPrimitives.WriteInt16BigEndian(buffer[10..12], (short)currentTime.Year);
 		}
 
-		++increment;
+		++_increment;
 
-		for (int i = 0; i < 4; i++)
-			buffer[i + 6] = incrementSpan[3 - i];
+		BinaryPrimitives.WriteInt32BigEndian(buffer[6..10], _increment);
 
-		if (increment == int.MaxValue)
+		if (_increment == int.MaxValue)
 		{
 			var sw = Stopwatch.StartNew();
 			while (sw.ElapsedTicks < 1_0000)
