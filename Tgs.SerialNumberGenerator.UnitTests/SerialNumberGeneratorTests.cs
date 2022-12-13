@@ -103,4 +103,25 @@ public class SerialNumberGeneratorTests
 		// Assert
 		Assert.Equal(1, actual2.CompareTo(actual1));
 	}
+
+	[Fact]
+	public async Task 產生流水號_時間中位元比較()
+	{
+		// Arrange
+		var fakeSystemClock = Substitute.For<ISystemClock>();
+		var sut = new SerialNumberGenerator(stackalloc byte[4], fakeSystemClock);
+		_ = sut.StartListenAsync();
+
+		_ = fakeSystemClock.UtcNow
+			.Returns(
+				DateTimeOffset.FromUnixTimeMilliseconds(0x0000_0100_0100_FFF2),
+				DateTimeOffset.FromUnixTimeMilliseconds(0x0000_0100_0200_0101));
+
+		// Act
+		var actual1 = await sut.GenerateAsync();
+		var actual2 = await sut.GenerateAsync();
+
+		// Assert
+		Assert.Equal(1, actual2.CompareTo(actual1));
+	}
 }
