@@ -17,8 +17,10 @@ public static class ServiceCollectionExtensions
 				sp => sp.GetRequiredService<SerialNumberGenerator>());
 
 			_ = services
-				.AddSingleton(
-					sp => new SerialNumberGenerator(sp.GetRequiredService<IMachineHasher>().ComputeHash()))
+				.AddSingleton<ISystemClock, DefaultSystemClock>()
+				.AddSingleton(sp => new SerialNumberGenerator(
+					sp.GetRequiredService<IMachineHasher>().ComputeHash(),
+					sp.GetRequiredService<ISystemClock>()))
 				.AddHostedService<SerialNumberGeneratorBackgroundService>();
 		}
 
