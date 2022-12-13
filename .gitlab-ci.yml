@@ -34,7 +34,6 @@ unit-test:
     reports:
       junit: ./TestReports/*-TestReport.xml
 
-
 push-nuget:
   stage: publish
   needs:
