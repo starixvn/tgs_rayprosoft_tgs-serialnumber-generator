@@ -38,7 +38,7 @@ unit-test:
 push-nuget:
   stage: publish
   needs:
-    - test
+    - unit-test
   cache:
     key: $BuildCacheKey
     untracked: true   
