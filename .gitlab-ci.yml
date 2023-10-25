@@ -1,3 +1,8 @@
+include:
+  - project: rayprosoft/tgs-ci-scripts
+    ref: main
+    file: GitLab/Templates/gitlab-job-templates.yml
+
 variables:
   BuildCacheKey: Tgs.SerialNumber.$CI_PIPELINE_IID
 
@@ -7,49 +12,15 @@ stages:
   - publish
 
 build-code:
-  stage: build
-  script:
-    - dotnet build -c $BuildConfiguration
-  only:
-    - main
-  cache:
-    key: $BuildCacheKey
-    untracked: true
+  extends: .build-code-template
 
 unit-test:
-  stage: test
-  script:
-    - dotnet test -c $BuildConfiguration -l:"junit;LogFilePath=../TestReports/{assembly}-TestReport.xml" --no-restore --no-build
-  needs:
-    - build-code
-  only:
-    - merge_requests
-    - main
-  cache:
-    key: $BuildCacheKey
-    untracked: true
-    policy: pull
-  artifacts:
-    when: always
-    reports:
-      junit: ./TestReports/*-TestReport.xml
+  extends: .unit-test-template
 
 push-nuget:
-  stage: publish
-  needs:
-    - unit-test
-  cache:
-    key: $BuildCacheKey
-    untracked: true   
-    policy: pull
-  only:
-    - main
+  extends: .push-nuget-template
   script:
-    - dotnet pack -c $BuildConfiguration "Tgs.SerialNumberGenerator/Tgs.SerialNumberGenerator.csproj" --no-build --no-restore
-    - dotnet nuget push "Tgs.SerialNumberGenerator/bin/$BuildConfiguration/*.nupkg" --source "raypro-baget" -k $NugetApiKey --skip-duplicate
+    - push_package 'Tgs.SerialNumberGenerator'
   artifacts:
-    name: Nuget
-    untracked: false
-    expire_in: "30 days"
     paths:
       - Tgs.SerialNumberGenerator/bin/$BuildConfiguration/*.nupkg

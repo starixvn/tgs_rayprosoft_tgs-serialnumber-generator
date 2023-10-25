@@ -8,8 +8,6 @@ namespace Tgs.SerialNumberGenerator;
 internal class SerialNumberGenerator : ISerialNumberGenerator
 {
 	private readonly Memory<byte> _buffer = new byte[16];
-	private int _increment = 0;
-
 	private readonly ISystemClock _systemClock;
 
 	private readonly Channel<TaskCompletionSource<Guid>> _taskQueue = Channel.CreateUnbounded<TaskCompletionSource<Guid>>(
@@ -18,6 +16,7 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 			SingleReader = true
 		});
 
+	private int _increment = 0;
 	private long _previousTimestamp = 0L;
 
 	public SerialNumberGenerator(ReadOnlySpan<byte> machineHash, ISystemClock systemClock)
@@ -33,8 +32,8 @@ internal class SerialNumberGenerator : ISerialNumberGenerator
 		var tcs = new TaskCompletionSource<Guid>();
 
 		await _taskQueue.Writer.WriteAsync(tcs, cancellationToken).ConfigureAwait(false);
-
-		_ = cancellationToken.Register(() => tcs.TrySetCanceled());
+		
+		await using var registration = cancellationToken.Register(() => tcs.TrySetCanceled());
 
 		return await tcs.Task.ConfigureAwait(false);
 	}
